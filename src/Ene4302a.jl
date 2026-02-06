@@ -1,5 +1,9 @@
 module Ene4302a
 
-# Write your package code here.
+using Plots
+
+export solution, model
+
+include("sinusoidal.jl")
 
 end
