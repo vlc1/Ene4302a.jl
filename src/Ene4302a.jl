@@ -5,6 +5,7 @@ export OrdinaryDifferentialEquation,
        Solution,
        solution,
        solution!,
+       ForwardEuler,
        Sinusoidal
 
 """
@@ -123,5 +124,6 @@ function (this::Solution)(y::AbstractArray, x::Number)
 end
 
 include("odes.jl")
+include("schemes.jl")
 
 end

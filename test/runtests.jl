@@ -15,6 +15,10 @@ using Test
 
     @test isapprox(y, y′)
 
+    num = ForwardEuler(eq, ic, 0.1)
+
     p = plot(sol, 0:1, 1)
+    plot!(p, num, (0, 1), 1)
+
     @test isa(p, Plots.Plot)
 end
