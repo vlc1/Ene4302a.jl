@@ -8,14 +8,13 @@ using Test
     eq = Sinusoidal()
     z = eq(x, y)
 
-    ic = InitialCondition(x, y)
-    sol = Solution(eq, ic)
+    sol = Solution(x, y, eq)
 
     y′ = sol(x)
 
     @test isapprox(y, y′)
 
-    num = ForwardEuler(eq, ic, 0.1)
+    num = ForwardEuler(0.1, x, y, eq)
 
     p = plot(sol, 0:1, 1)
     plot!(p, num, (0, 1), 1)

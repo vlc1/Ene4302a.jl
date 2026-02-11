@@ -1,7 +1,6 @@
 module Ene4302a
 
 export OrdinaryDifferentialEquation,
-       InitialCondition,
        Solution,
        solution,
        solution!,
@@ -62,65 +61,39 @@ Subtypes of `ODE` should implement this method to provide analytical solutions w
 """
 solution(::ODE, _, _, _) = throw(ArgumentError("No analytical solution available."))
 
-"""
-
-    InitialCondition{T,N,A<:AbstractArray{T,N}}
-
-Stores the initial condition for an ODE at position/time `x` with state `y`.
-
-# Fields
-
-- `x::T`: Initial position or time
-- `y::A`: Initial state (array with `N` dimensions)
-
-# Constructor
-
-    InitialCondition(x, y)
-    InitialCondition(y)  # assumes x = zero(y)
 
 """
-struct InitialCondition{T,N,A<:AbstractArray{T,N}}
-    x::T
-    y::A
-end
-
-const IC = InitialCondition
-
-IC(y) = IC(zero(y), y)
-
-"""
-    Solution{Q<:ODE, C<:InitialCondition} <: Function
+    Solution{Q<:ODE, C<:State} <: Function
 
 A callable object representing the analytical solution to an ODE with given initial conditions.
 
 # Fields
 - `eq::ODE`: The ordinary differential equation
-- `ic::InitialCondition`: The initial condition
+- `ic::State`: The initial condition
 
 # Usage
     sol = Solution(eq, ic)
     y = sol(x)          # Allocating: compute solution at x
     sol(y, x)           # In-place: store solution at x in y
 """
-struct Solution{Q<:ODE,C<:IC} <: Function
+struct Solution{T,A<:AbstractArray{T},Q<:ODE} <: Function
+    x::T
+    y::A
     eq::Q
-    ic::C
 end
 
-function (this::Solution)(x::Number, i)
-    (; eq, ic) = this
-    x₀, y₀ = ic.x, ic.y
+function (this::Solution)(x′::Number, i)
+    (; x, y, eq) = this
 
-    solution(eq, y₀, x-x₀, i)
+    solution(eq, y, x′-x, i)
 end
 
-(this::Solution)(x::Number) = (y = similar(this.ic.y); this(y, x))
+(this::Solution)(x::Number) = (y = similar(this.y); this(y, x))
 
-function (this::Solution)(y::AbstractArray, x::Number)
-    (; eq, ic) = this
-    x₀, y₀ = ic.x, ic.y
+function (this::Solution)(y′::AbstractArray, x′::Number)
+    (; x, y, eq) = this
 
-    solution!(y, eq, y₀, x-x₀)
+    solution!(y′, eq, y, x′-x)
 end
 
 include("odes.jl")

@@ -7,24 +7,19 @@ Plots.@recipe function f(sol::Solution, x::AbstractVector, i)
     x, sol.(x, i)
 end
 
-Plots.@recipe function f(sol::ForwardEuler, (a, b)::Tuple, i)
-    (; eq, ic, tau) = sol
-    x₀, y₀ = ic.x, ic.y
+Plots.@recipe function f(num::ForwardEuler, (a, b)::Tuple, i)
+    (; x, y) = num
 
-    abscissas = similar(y₀, typeof(x₀), 0)
-    components = similar(y₀, 0)
+    xs = similar(y, typeof(x), 0)
+    yis = similar(y, 0)
 
-    x, y, z = x₀, deepcopy(y₀), similar(y₀)
-    x ≥ a && (push!(abscissas, x); push!(components, y[i]))
+    for (x, y) in num
+        x ≥ a && (push!(xs, x); push!(yis, y[i]))
 
-    while x < b
-        y .+= tau .* eq(z, x, y)
-        x += tau
-
-        x ≥ a && (push!(abscissas, x); push!(components, y[i]))
+        x > b && break
     end
 
-    abscissas, components
+    xs, yis
 end
 
 end

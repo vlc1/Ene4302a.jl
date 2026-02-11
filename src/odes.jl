@@ -21,8 +21,7 @@ The solution exhibits a combination of exponential decay (controlled by `lambda`
 
 ```julia
 eq = Sinusoidal(lambda = -0.2, omega = 4.0, amp = [0.5])
-ic = InitialCondition(0.0, [1.0])
-sol = Solution(eq, ic)
+sol = Solution(0.0, [1.0], eq)
 y = sol(1.0)  # Evaluate analytical solution at t = 1.0
 ```
 
