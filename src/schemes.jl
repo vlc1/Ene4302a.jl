@@ -1,71 +1,107 @@
+abstract type TimeStepper{N} end
+
 """
 
-    ForwardEuler(tau, x, y, eq)
+    ForwardEuler(tau, delta, eq)
 
-A stateful iterator for time-stepping an ODE using the forward Euler scheme.
+Representation of the forward Euler recurrence relation for explicit first-order ODEs.
 
-Each iteration yields a tuple `(x, z)` where:
-
-- `x`: The current time
-- `z`: The current numerical solution (pre-allocated buffer)
+This is a callable object that applies one step of the forward Euler scheme to update a state vector in-place. Used in conjunction with `update!` to advance the numerical solution.
 
 # Fields
 
-- `tau`: Time step size
-- `x`: Current time
-- `y`: Initial condition
-- `z`: Solution buffer (reused across iterations)
-- `dot`: Buffer for in-place model evaluation
-- `eq`: The differential equation to solve
+- `tau::T`: Time step size
+- `delta::AbstractArray`: Pre-allocated buffer for in-place RHS evaluation (modified during each call)
+- `eq::ODE{1}`: The explicit first-order ODE to solve
 
-!!! warning
+# Usage
 
-    This iterator reuses the same mutable buffers (`z` and `dot`) for efficiency. All yielded tuples reference the same `z` array, so its values change at each iteration. To collect the solution history, create independent copies:
-    ```julia
-    solver = ForwardEuler(tau, x, y, eq)
-    history = [copy(z) for (x, z) in solver]
-    ```
+```julia
+y = ones(1)
+eq = Sinusoidal()
+tau = 0.1
+scheme = ForwardEuler(tau, similar(y), eq)
 
-    For a specific component `i` up to time `t_max`:
-    ```julia
-    component_i = [z[i] for (x, z) in solver if x ≤ t_max]
-    ```
+x = 0.0
+for _ in 1:100
+    x = update!(y, scheme, x)  # Updates y in-place, returns new time
+end
+```
+
+# Details
+
+Calling the scheme via `(scheme)(y, x)` applies the recurrence relation:
+```math
+y^{n+1} = y^n + \\tau f(x^n, y^n)
+```
+
+All operations are performed in-place:
+- The buffer `delta` is overwritten with the RHS evaluation
+- The state vector `y` is updated by accumulating the time-scaled increment
+- No intermediate allocations occur
+
+The `update!` function is provided as a convenience alias that calls the scheme and returns the updated time.
 
 """
-struct ForwardEuler{T,N,A<:AbstractArray{T,N},S,Q<:ODE{1}}
-    tau::S
-    x::S
-    y::A
-    dot::A
+struct ForwardEuler{T,Q<:ODE{1}} <: TimeStepper{1}
+    step::T
+    eq::Q
+end
+#struct ForwardEuler{T,A<:AbstractArray,Q<:ODE{1}} <: Function
+#    tau::T
+#    delta::A
+#    eq::Q
+#end
+
+
+"""
+
+    (scheme::ForwardEuler)(y, x)
+
+Apply one step of the forward Euler scheme.
+
+# Arguments
+
+- `y::AbstractArray`: Current state (modified in-place by accumulating the time-scaled increment)
+- `x::Number`: Current time
+
+# Returns
+
+The updated time `x + tau`.
+
+# Details
+
+Updates the state vector `y` according to:
+```math
+y \\leftarrow y + \\tau f(x, y)
+```
+
+where `f` is the ODE's right-hand side. The increment is computed in-place using the pre-allocated buffer `delta` to avoid allocations.
+
+"""
+function (this::ForwardEuler)(y, x)
+    (; step, eq) = this
+    eq(y, x, step)
+    x + step
+end
+
+
+struct BackwardEuler{T,A<:AbstractArray,Q<:ODE{1}} <: TimeStepper{1}
+    step::T
+    inc::A
     eq::Q
 end
 
-ForwardEuler(tau, x, y, eq) =
-    ForwardEuler(tau, x, deepcopy(y), similar(y), eq)
+function (this::BackwardEuler)(y, x)
+    (; step, inc, eq) = this
 
-Base.IteratorSize(::Type{<:ForwardEuler}) = Base.IsInfinite()
+    x += step
 
-Base.IteratorEltype(::Type{<:ForwardEuler}) = Base.HasEltype()
+    fill!(inc, zero(eltype(inc)))
+    sol = nlsolve(inc) do res, inc
+        eq(res, x, y, inc, -step)
+    end
+    y .+= sol.zero
 
-Base.eltype(::Type{<:ForwardEuler{T,N,A,S}}) where {T,N,A,S} = Tuple{S,A}
-
-#function Base.iterate(iter::ForwardEuler)
-#    (; x, y, z) = iter
-#    copy!(z, y)
-#    (x, z), x
-#end
-function Base.iterate(iter::ForwardEuler)
-    (; x, y) = iter
-    (x, y), iter
-end
-
-function Base.iterate(::ForwardEuler, state)
-    (; tau, x, y, dot, eq) = state
-
-    y .+= tau .* eq(dot, x, y)
-    x += tau
-
-    next = ForwardEuler(tau, x, y, dot, eq)
-
-    (x, y), next
+    x
 end

@@ -6,7 +6,11 @@ export OrdinaryDifferentialEquation,
        Solution,
        solution,
        solution!,
+#       update!,
+       TimeStepper,
        ForwardEuler,
+       BackwardEuler,
+#       Series,
        Sinusoidal
 
 """
@@ -78,7 +82,7 @@ A callable object representing the analytical solution to an ODE with given init
     y = sol(x)          # Allocating: compute solution at x
     sol(y, x)           # In-place: store solution at x in y
 """
-struct Solution{T,A<:AbstractArray{T},Q<:ODE} <: Function
+struct Solution{T,A<:AbstractArray,Q<:ODE} <: Function
     x::T
     y::A
     eq::Q

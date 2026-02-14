@@ -58,10 +58,34 @@ This function corresponds to the right-hand side of the initial value problem:
 where ``\\lambda`` is the decay rate, ``\\omega`` is the angular frequency, and ``A`` is the forcing amplitude.
 
 """
+#=
 function (this::Sinusoidal)(z, x, y)
     λ, ω, A = this.lambda, this.omega, this.amp
 
-    z .= A * sin(ω * x) - λ * y
+    @. z = A * sin(ω * x) - λ * y
+end
+=#
+
+"""
+
+Overwrite `y` with `f(x, y) * α + y` and return `y`.
+
+"""
+function (this::Sinusoidal)(y::AbstractArray, x::Number, α::Number)
+    λ, ω, A = this.lambda, this.omega, this.amp
+
+    @. y += (A * sin(ω * x) - λ * y) * α
+end
+
+"""
+
+Overwrite `res` with `f(x, y + inc) α + inc` and return `inc`.
+
+"""
+function (this::Sinusoidal)(res::AbstractArray, x::Number, y::AbstractArray, inc::AbstractArray, α::Number)
+    λ, ω, A = this.lambda, this.omega, this.amp
+
+    @. res .= inc + (A * sin(ω * x) - λ * (y + inc)) * α
 end
 
 """

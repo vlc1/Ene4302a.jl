@@ -7,16 +7,16 @@ Plots.@recipe function f(sol::Solution, x::AbstractVector, i)
     x, sol.(x, i)
 end
 
-Plots.@recipe function f(num::ForwardEuler, (a, b)::Tuple, i)
-    (; x, y) = num
-
+Plots.@recipe function f(scheme::TimeStepper{1}, (a, b)::Tuple, x, y, i)
     xs = similar(y, typeof(x), 0)
     yis = similar(y, 0)
 
-    for (x, y) in num
-        x ≥ a && (push!(xs, x); push!(yis, y[i]))
+    x ≥ a && (push!(xs, x); push!(yis, y[i]))
 
-        x > b && break
+    while x ≤ b
+        x = scheme(y, x)
+
+        x ≥ a && (push!(xs, x); push!(yis, y[i]))
     end
 
     xs, yis
