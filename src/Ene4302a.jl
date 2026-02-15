@@ -10,6 +10,7 @@ export OrdinaryDifferentialEquation,
        TimeStepper,
        ForwardEuler,
        BackwardEuler,
+       Midpoint,
 #       Series,
        Sinusoidal
 
@@ -103,6 +104,6 @@ function (this::Solution)(y′::AbstractArray, x′::Number)
 end
 
 include("odes.jl")
-include("schemes.jl")
+include("timestepper.jl")
 
 end

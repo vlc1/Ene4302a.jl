@@ -14,7 +14,7 @@ Plots.@recipe function f(scheme::TimeStepper{1}, (a, b)::Tuple, x, y, i)
     x ≥ a && (push!(xs, x); push!(yis, y[i]))
 
     while x ≤ b
-        x = scheme(y, x)
+        x = scheme(x, y)
 
         x ≥ a && (push!(xs, x); push!(yis, y[i]))
     end

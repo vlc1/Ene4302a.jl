@@ -15,10 +15,12 @@ using Test
     step = 0.1
     fwd = ForwardEuler(step, eq)
     bwd = BackwardEuler(step, similar(y), eq)
+    mid = Midpoint(step, similar(y), eq)
 
     p = plot(sol, 0.:0.01:1., 1)
     scatter!(p, fwd, (0, 1), x, ones(1), 1)
     scatter!(p, bwd, (0, 1), x, ones(1), 1)
+    scatter!(p, mid, (0, 1), x, ones(1), 1)
 
     @test isa(p, Plots.Plot)
 end

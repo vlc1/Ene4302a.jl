@@ -90,6 +90,17 @@ end
 
 """
 
+Overwrite `res` with `f(x, y + β * inc) α + inc` and return `inc`.
+
+"""
+function (this::Sinusoidal)(res::AbstractArray, x::Number, y::AbstractArray, inc::AbstractArray, α::Number, β::Number)
+    λ, ω, A = this.lambda, this.omega, this.amp
+
+    @. res .= inc + (A * sin(ω * x) - λ * (y + inc * β)) * α
+end
+
+"""
+
     solution!(y, eq::Sinusoidal, y₀, Δx)
 
 Compute the analytical solution to the initial value problem with sinusoidal forcing in-place.

@@ -1,4 +1,41 @@
+"""
+
+    TimeStepper{N}
+
+Abstract base type for numerical time-stepping schemes for solving initial value problems.
+
+# Type Parameter
+
+- `N::Int`: The number of previous steps required by the scheme. `N=1` for single-step methods (e.g., Forward Euler), `N=2` for two-step methods (e.g., Adams-Bashforth), etc.
+
+# Interface
+
+Concrete subtypes must implement the call operator with `N+1` state arguments:
+
+```julia
+(::TimeStepper{N})(_, ::Vararg{AbstractArray,N}) where {N}
+```
+
+where the first argument is the current state vector (modified in-place) and the remaining `N` arguments are the previous state vectors.
+
+"""
 abstract type TimeStepper{N} end
+
+"""
+
+    (::TimeStepper{N})(y, args...)
+
+Generic fallback for time-stepping schemes.
+
+This method is called when a concrete subtype of `TimeStepper` does not implement its own call operator. It throws a `MethodError` to indicate that the scheme is not properly defined.
+
+# Throws
+
+- `MethodError`: Always thrown, indicating the scheme's recurrence relation is not implemented for the given arguments.
+
+"""
+(::TimeStepper{N})(_, ::Vararg{AbstractArray,N}) where {N} =
+    throw(MethodError("The time-stepping scheme is not defined for the given arguments."))
 
 """
 
@@ -56,14 +93,14 @@ end
 
 """
 
-    (scheme::ForwardEuler)(y, x)
+    (scheme::ForwardEuler)(x, y)
 
 Apply one step of the forward Euler scheme.
 
 # Arguments
 
-- `y::AbstractArray`: Current state (modified in-place by accumulating the time-scaled increment)
 - `x::Number`: Current time
+- `y::AbstractArray`: Current state (modified in-place by accumulating the time-scaled increment)
 
 # Returns
 
@@ -79,7 +116,7 @@ y \\leftarrow y + \\tau f(x, y)
 where `f` is the ODE's right-hand side. The increment is computed in-place using the pre-allocated buffer `delta` to avoid allocations.
 
 """
-function (this::ForwardEuler)(y, x)
+function (this::ForwardEuler)(x, y::AbstractArray)
     (; step, eq) = this
     eq(y, x, step)
     x + step
@@ -92,7 +129,7 @@ struct BackwardEuler{T,A<:AbstractArray,Q<:ODE{1}} <: TimeStepper{1}
     eq::Q
 end
 
-function (this::BackwardEuler)(y, x)
+function (this::BackwardEuler)(x, y::AbstractArray)
     (; step, inc, eq) = this
 
     x += step
@@ -104,4 +141,25 @@ function (this::BackwardEuler)(y, x)
     y .+= sol.zero
 
     x
+end
+
+
+struct Midpoint{T,A<:AbstractArray,Q<:ODE{1}} <: TimeStepper{1}
+    step::T
+    inc::A
+    eq::Q
+end
+
+function (this::Midpoint)(x, y::AbstractArray)
+    (; step, inc, eq) = this
+
+    x += step / 2
+
+    fill!(inc, zero(eltype(inc)))
+    sol = nlsolve(inc) do res, inc
+        eq(res, x, y, inc, -step, one(step) / 2)
+    end
+    y .+= sol.zero
+
+    x += step / 2
 end
