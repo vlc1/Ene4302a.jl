@@ -21,8 +21,6 @@ The solution exhibits a combination of exponential decay (controlled by `lambda`
 
 ```julia
 eq = Sinusoidal(lambda = -0.2, omega = 4.0, amp = [0.5])
-sol = Solution(0.0, [1.0], eq)
-y = sol(1.0)  # Evaluate analytical solution at t = 1.0
 ```
 
 """
@@ -99,6 +97,7 @@ function (this::Sinusoidal)(res::AbstractArray, x::Number, y::AbstractArray, inc
     @. res .= inc + (A * sin(ω * x) - λ * (y + inc * β)) * α
 end
 
+#=
 """
 
     solution!(y, eq::Sinusoidal, y₀, Δx)
@@ -128,6 +127,20 @@ function solution!(y, eq::Sinusoidal, y₀, Δx)
 
     y .= exp(-λ * Δx) * y₀ + A * (λ * sin(ω * Δx) - ω * cos(ω * Δx) + ω * exp(-λ * Δx)) / (λ ^ 2 + ω ^ 2)
 end
+=#
+
+function propagate(eq::Sinusoidal, x, y, step, i)
+    @boundscheck checkbounds(y, i)
+
+    λ, ω, A = eq.lambda, eq.omega, eq.amp
+    @boundscheck checkbounds(A, i)
+
+    x += step
+
+    x, exp(-λ * x) * y[i] + A[i] * (λ * sin(ω * x) - ω * cos(ω * x) + ω * exp(-λ * x)) / (λ ^ 2 + ω ^ 2)
+end
+
+#=
 
 """
 
@@ -159,3 +172,5 @@ function solution(eq::Sinusoidal, y₀, Δx, i)
 
     exp(-λ * Δx) * y₀[i] + A[i] * (λ * sin(ω * Δx) - ω * cos(ω * Δx) + ω * exp(-λ * Δx)) / (λ ^ 2 + ω ^ 2)
 end
+
+=#

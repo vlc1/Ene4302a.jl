@@ -3,11 +3,11 @@ module Ene4302a
 using NLsolve
 
 export OrdinaryDifferentialEquation,
-       Solution,
-       solution,
-       solution!,
+       Propagator,
+#       Solution,
+#       solution,
+#       solution!,
 #       update!,
-       TimeStepper,
        ForwardEuler,
        BackwardEuler,
        Midpoint,
@@ -39,6 +39,7 @@ const ODE = OrdinaryDifferentialEquation
 (this::ODE{N})(z, x, args::Vararg{Any,N}) where {N} =
     throw(MethodError("The right-hand side function is not defined."))
 
+#=
 """
 
     solution!(y, eq::ODE, y₀, Δx)
@@ -101,6 +102,17 @@ function (this::Solution)(y′::AbstractArray, x′::Number)
     (; x, y, eq) = this
 
     solution!(y′, eq, y, x′-x)
+end
+=#
+
+struct Propagator{Q<:ODE}
+    eq::Q
+end
+
+function (this::Propagator)(x, y::AbstractArray, tau, i)
+    (; eq) = this
+
+    propagate(eq, x, y, tau, i)
 end
 
 include("odes.jl")
