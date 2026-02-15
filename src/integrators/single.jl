@@ -1,15 +1,4 @@
-"""
-
-    TimeStepper{N}
-
-Abstract base type for numerical time-stepping schemes for solving initial value problems.
-
-# Type Parameter
-
-- `N::Int`: The number of previous steps required by the scheme. `N=1` for single-step methods (e.g., Forward Euler), `N=2` for two-step methods (e.g., Adams-Bashforth), etc.
-
-"""
-abstract type TimeStepper{N} end
+# single-step integrators for explicit first-order ODEs
 
 """
 
@@ -27,7 +16,7 @@ This is a callable object that applies one step of the forward Euler scheme to u
 - `eq::ODE{1}`: The explicit first-order ODE to solve
 
 """
-struct ForwardEuler{Q<:ODE{1}} <: TimeStepper{1}
+struct ForwardEuler{Q<:ODE{1}} <: Integrator{1}
     eq::Q
 end
 
@@ -50,11 +39,17 @@ The updated time `x + tau`.
 """
 function (this::ForwardEuler)(x, y::AbstractArray, tau)
     (; eq) = this
-    eq(y, x, tau)
+    eq(x, y, tau)
     x + tau
 end
 
-struct BackwardEuler{Q<:ODE{1},A<:AbstractArray} <: TimeStepper{1}
+
+"""
+
+    BackwardEuler(eq, buffer)
+
+"""
+struct BackwardEuler{Q<:ODE{1},A<:AbstractArray} <: Integrator{1}
     eq::Q
     inc::A
 end
@@ -74,7 +69,12 @@ function (this::BackwardEuler)(x, y::AbstractArray, tau)
 end
 
 
-struct Midpoint{Q<:ODE{1},A<:AbstractArray} <: TimeStepper{1}
+"""
+
+    Midpoint(eq, buffer)
+
+"""
+struct Midpoint{Q<:ODE{1},A<:AbstractArray} <: Integrator{1}
     eq::Q
     inc::A
 end

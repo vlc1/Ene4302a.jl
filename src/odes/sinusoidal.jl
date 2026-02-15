@@ -33,43 +33,13 @@ end
 Sinusoidal(; lambda = -0.2, omega = 4., amp = ones(1) / 2) = 
     Sinusoidal(lambda, omega, amp)
 
-"""
-
-    (::Sinusoidal)(z, x, y)
-
-Compute the right-hand side of the differential equation for a sinusoidally forced first-order ODE in-place.
-
-# Arguments
-
-- `z`: Output array to store the time derivative ``\\dot{y}(t)`` (modified in-place)
-- `x`: Time at which to evaluate the derivative
-- `y`: Current value of the solution
-
-# Mathematical formulation
-
-This function corresponds to the right-hand side of the initial value problem:
-
-```math
-\\dot{y}(t) = A \\sin(\\omega t) - \\lambda y(t)
-```
-
-where ``\\lambda`` is the decay rate, ``\\omega`` is the angular frequency, and ``A`` is the forcing amplitude.
-
-"""
-#=
-function (this::Sinusoidal)(z, x, y)
-    λ, ω, A = this.lambda, this.omega, this.amp
-
-    @. z = A * sin(ω * x) - λ * y
-end
-=#
 
 """
 
 Overwrite `y` with `f(x, y) * α + y` and return `y`.
 
 """
-function (this::Sinusoidal)(y::AbstractArray, x::Number, α::Number)
+function (this::Sinusoidal)(x, y::AbstractArray, α::Number)
     λ, ω, A = this.lambda, this.omega, this.amp
 
     @. y += (A * sin(ω * x) - λ * y) * α
@@ -97,23 +67,31 @@ function (this::Sinusoidal)(res::AbstractArray, x::Number, y::AbstractArray, inc
     @. res .= inc + (A * sin(ω * x) - λ * (y + inc * β)) * α
 end
 
-#=
+
 """
 
-    solution!(y, eq::Sinusoidal, y₀, Δx)
+    propagate(eq::Sinusoidal, x, y, tau, i)
 
-Compute the analytical solution to the initial value problem with sinusoidal forcing in-place.
+Compute the `i`th component of the analytical solution to the initial value problem with sinusoidal forcing.
 
 # Arguments
 
-- `y`: Output array to store the solution (modified in-place)
 - `eq`: The ODE instance containing the parameters (``\\lambda``, ``\\omega``, ``A``)
-- `y₀`: Initial condition value at the initial time
-- `Δx`: Time difference from the initial condition, i.e., ``\\Delta x = x - x_0``
+- `x`: Initial time
+- `y`: Initial condition value at the initial time
+- `tau`: Time difference from the initial condition
+- `i`: Index of the component to compute (must be within bounds of `y` and `A`)
+
+# Returns
+
+A `Tuple` containing:
+
+- The initial time `x`
+- The `i`th component of the analytical solution at time `x + tau`
 
 # Mathematical formulation
 
-This function computes the analytical solution:
+The analytical solution is given by:
 
 ```math
 y(x) = \\exp(-\\lambda \\Delta x) y_0 + \\frac{A}{\\lambda^2 + \\omega^2} \\left( \\lambda \\sin(\\omega \\Delta x) - \\omega \\cos(\\omega \\Delta x) + \\omega \\exp(-\\lambda \\Delta x) \\right)
@@ -122,55 +100,13 @@ y(x) = \\exp(-\\lambda \\Delta x) y_0 + \\frac{A}{\\lambda^2 + \\omega^2} \\left
 where ``y_0`` is the initial condition, ``\\lambda`` is the decay rate, ``\\omega`` is the angular frequency, and ``A`` is the forcing amplitude.
 
 """
-function solution!(y, eq::Sinusoidal, y₀, Δx)
-    λ, ω, A = eq.lambda, eq.omega, eq.amp
-
-    y .= exp(-λ * Δx) * y₀ + A * (λ * sin(ω * Δx) - ω * cos(ω * Δx) + ω * exp(-λ * Δx)) / (λ ^ 2 + ω ^ 2)
-end
-=#
-
-function propagate(eq::Sinusoidal, x, y, step, i)
+function propagate(eq::Sinusoidal, x, y, tau, i)
     @boundscheck checkbounds(y, i)
 
     λ, ω, A = eq.lambda, eq.omega, eq.amp
     @boundscheck checkbounds(A, i)
 
-    x += step
+    x += tau
 
     x, exp(-λ * x) * y[i] + A[i] * (λ * sin(ω * x) - ω * cos(ω * x) + ω * exp(-λ * x)) / (λ ^ 2 + ω ^ 2)
 end
-
-#=
-
-"""
-
-    solution(eq::Sinusoidal, y₀, Δx, i)
-
-Compute the i-th component of the analytical solution to the sinusoidally forced ODE.
-
-# Arguments
-
-- `eq::Sinusoidal`: The ODE instance containing parameters
-- `y₀`: Initial condition vector
-- `Δx`: Time difference from the initial condition
-- `i`: Component index to extract
-
-# Returns
-
-A scalar value representing the i-th component of the solution at time ``x_0 + \\Delta x``.
-
-# Bounds checking
-
-Component index `i` is checked against the bounds of both `y₀` and the amplitude vector `A`. Bounds checking can be disabled with `--check-bounds=no` for performance-critical code.
-
-"""
-function solution(eq::Sinusoidal, y₀, Δx, i)
-    @boundscheck checkbounds(y₀, i)
-
-    λ, ω, A = eq.lambda, eq.omega, eq.amp
-    @boundscheck checkbounds(A, i)
-
-    exp(-λ * Δx) * y₀[i] + A[i] * (λ * sin(ω * Δx) - ω * cos(ω * Δx) + ω * exp(-λ * Δx)) / (λ ^ 2 + ω ^ 2)
-end
-
-=#
