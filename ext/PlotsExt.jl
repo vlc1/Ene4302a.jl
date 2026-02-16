@@ -1,9 +1,9 @@
 module PlotsExt
 
-using Ene4302a
+using InitialValueProblems
 using Plots
 
-using Ene4302a: Integrator
+using InitialValueProblems: Integrator
 
 Plots.@recipe function f(flow::Propagator, xs::AbstractRange, y, i=firstindex(y))
     n, tau = length(xs), step(xs)

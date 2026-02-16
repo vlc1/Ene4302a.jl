@@ -1,5 +1,5 @@
 using Plots
-using Ene4302a
+using InitialValueProblems
 using Test
 
 @testset "Sinusoidal solution" begin

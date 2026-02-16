@@ -1,4 +1,4 @@
-module Ene4302a
+module InitialValueProblems
 
 using NLsolve
 
