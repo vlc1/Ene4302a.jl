@@ -1,6 +1,7 @@
 # InitialValueProblems
 
 [![Build Status](https://github.com/vlc1/InitialValueProblems.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/vlc1/InitialValueProblems.jl/actions/workflows/CI.yml?query=branch%3Amain)
+[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://vlc1.github.io/InitialValueProblems.jl/dev/)
 
 Light-weight initial value problems for ordinary differential equations, with single-step integrators and a small model catalog.
 
